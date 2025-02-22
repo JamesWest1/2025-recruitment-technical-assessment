@@ -46,6 +46,15 @@ app.post("/parse", (req:Request, res:Response) => {
 // Takes in a recipeName and returns it in a form that 
 const parse_handwriting = (recipeName: string): string | null => {
   // TODO: implement me
+  recipeName.replace(/[-_]/, " ")
+  recipeName.replace(/ +/, " ")
+  recipeName.replace(/^ /, "")
+  recipeName.replace(/ $/, "")
+  let words = recipeName.split(" ")
+  for (let ind in words) {
+    words[ind] = words[ind].charAt(0).toUpperCase();
+  }
+  recipeName = words.join(" ")
   return recipeName
 }
 
@@ -53,6 +62,7 @@ const parse_handwriting = (recipeName: string): string | null => {
 // Endpoint that adds a CookbookEntry to your magical cookbook
 app.post("/entry", (req:Request, res:Response) => {
   // TODO: implement me
+  
   res.status(500).send("not yet implemented!")
 
 });
