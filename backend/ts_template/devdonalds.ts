@@ -77,6 +77,7 @@ const readCookbook = ():any => {
 
 const writeCookbook = (obj:cookbookEntry) => {
   let data = readCookbook()
+  obj.name = parse_handwriting(obj.name)
   data.push(obj)
   const toJsonData = JSON.stringify(data)
   try {

@@ -208,5 +208,62 @@ describe("Task 3", () => {
         ]
       })
     });
+    it("big test", async () => {
+      const meatball = {
+        type: "recipe",
+        name: "Top",
+        requiredItems: [{ name: "Egg", quantity: 7 }, {name: "Beef", quantity: 5}, {name: "Cake", quantity: 2}],
+      };
+      const resp1 = await postEntry(meatball);
+      expect(resp1.status).toBe(200);
+
+      const resp2 = await postEntry({
+        type: "recipe",
+        name: "Egg",
+        requiredItems: [{ name: "Base", quantity: 2 }]
+      });
+      expect(resp2.status).toBe(200);
+      const resp3 = await postEntry({
+        type: "recipe",
+        name: "Beef",
+        requiredItems:[{ name: "Base", quantity: 3 }]
+      });
+      expect(resp3.status).toBe(200);
+      const resp4 = await postEntry({
+        type: "ingredient",
+        name: "Base",
+        cookTime: 1
+      });
+      expect(resp4.status).toBe(200);
+      const resp5 = await postEntry({
+        type: "recipe",
+        name: "Cake",
+        requiredItems: [{name: "Chocolate", quantity: 10}, {name: "Flour", quantity: 3}]
+      });
+      expect(resp5.status).toBe(200);
+      const resp6 = await postEntry({
+        type: "ingredient",
+        name: "Chocolate",
+        cookTime: 3
+      });
+      expect(resp6.status).toBe(200);
+      const resp7 = await postEntry({
+        type: "ingredient",
+        name: "Flour",
+        cookTime: 5
+      });
+      expect(resp7.status).toBe(200);
+      const resp8 = await getTask3("Top");
+      expect(resp8.status).toBe(200);
+      expect(resp8.body).toEqual({
+        name: "Top",
+        cookTime: 119,
+        ingredients: [
+          {name: "Base", quantity: 29},
+          {name: "Chocolate", quantity: 20},
+          {name: "Flour", quantity: 6}
+        ]
+      })
+    });
   });
 });
