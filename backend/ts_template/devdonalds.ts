@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import { json } from "stream/consumers";
+import * as fs from "fs";
 
 // ==== Type Definitions, feel free to add or modify ==========================
 interface cookbookEntry {
@@ -61,6 +62,30 @@ const parse_handwriting = (recipeName: string): string | null => {
 
 // [TASK 2] ====================================================================
 // Endpoint that adds a CookbookEntry to your magical cookbook
+
+const readCookbook = ():any => {
+  try {
+    const data = fs.readFileSync("cookbook.json", "utf8");
+    return JSON.parse(data);
+  }
+  catch (err) {
+    console.log(err)
+    return [];
+  }
+}
+
+const writeCookbook = (obj:cookbookEntry) => {
+  let data = readCookbook()
+  data.push(obj)
+  const toJsonData = JSON.stringify(data)
+  try {
+    fs.writeFileSync("cookbook.json", toJsonData)
+  }
+  catch (err) {
+    console.log(err)
+  }
+}
+
 const hasKey = (obj:any, str:string) => {
   return str in obj;
 }
@@ -90,7 +115,7 @@ const checkValidIngredient = (obj:any):boolean => {
 
 const convertFromObj = (obj:any, ): ingredient | recipe | null => {
   if (!hasKey(obj, "name")) return null;
-  if (!hasKey( obj, "type")) return null;
+  if (!hasKey(obj, "type")) return null;
   if (obj.type === "recipe") {
     if (!checkValidRecipe(obj)) return null;
     let castObj:recipe = obj as recipe;
@@ -113,6 +138,7 @@ app.post("/entry", (req:Request, res:Response) => {
       res.status(400).send("invalid")
     }
     else {
+      writeCookbook(cookObj)
       res.status(200).send("valid")
     }
   })
