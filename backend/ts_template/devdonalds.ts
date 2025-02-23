@@ -87,14 +87,12 @@ const writeCookbook = (obj:cookbookEntry) => {
   }
 }
 
-const checkUnique = (obj:any) => {
-  let seen = new Set(obj.name)
+const checkContains = (name:string) => {
   let cookbook = readCookbook()
-  for (let item of cookbook) {
-    if (seen.has(item.name)) return false;
-    seen.add(item.name);
-  }
-  return true;
+  const dishNameSearch = cookbook.filter((dish:any) => {
+    return name === dish.name;
+  })
+  return (dishNameSearch.length !== 0)
 }
 
 const hasKey = (obj:any, str:string) => {
@@ -108,49 +106,117 @@ const checkValidRecipe = (obj:any): boolean =>{
     return hasKey(item, "quantity") && hasKey(item, "name") && (Object.keys(item).length == 2)
   })
   if (initialSize !== obj.requiredItems.length) return false;
-  if (!checkUnique(obj)) return false
   return true;
 }
 const checkValidIngredient = (obj:any):boolean => {
   if(!hasKey(obj, "cookTime")) return false;
   if (parseInt(obj.cookTime) < 0) return false;
-  if (!checkUnique(obj)) return false;
   return true;
 }
 
-const convertFromObj = (obj:any): ingredient | recipe | null => {
-  if (!hasKey(obj, "name")) return null;
-  if (!hasKey(obj, "type")) return null;
+const validItem = (obj:any): boolean => {
+  if (!hasKey(obj, "name")) return false;
+  if (!hasKey(obj, "type")) return false;
   if (obj.type === "recipe") {
-    if (!checkValidRecipe(obj)) return null;
-    let castObj:recipe = obj as recipe;
-    return castObj;
+    return checkValidRecipe(obj);
   }
   else if (obj.type === "ingredient") {
-    if (!checkValidIngredient(obj)) return null;
-    let castObj:ingredient = obj as ingredient;
-    return castObj;
+    return checkValidIngredient(obj);
   }
-  else return null;
+  else return false;
+}
+
+const convertToEntry = (obj:any): recipe | ingredient | null => {
+  if (!validItem(obj)) return null;
+  else if (obj.type === "recipe") return obj as recipe;
+  else if (obj.type === "ingredient") return obj as ingredient;
+  else return null
 }
 
 app.post("/entry", (req:Request, res:Response) => {
   const cookbook = req.body
-  let cookObj = convertFromObj(cookbook);
-  if (cookObj == null) {
+  let cookObj = convertToEntry(cookbook);
+  if (checkContains(cookbook.name)) {
+    res.status(400).send("already in the cookbook")
+  }
+  else if (cookObj == null) {
     res.status(400).send("invalid")
   }
   else {
-    writeCookbook(cookObj)
+    writeCookbook(cookbook)
     res.status(200).send("valid")
   }
 });
 // [TASK 3] ====================================================================
 // Endpoint that returns a summary of a recipe that corresponds to a query name
-app.get("/summary", (req:Request, res:Request) => {
-  // TODO: implement me
-  res.status(500).send("not yet implemented!")
 
+const getEntry = (name:string): cookbookEntry | null => {
+  let cookbook = readCookbook()
+  for (let item of cookbook) {
+    if (item.name === name && item.type === "recipe") return item as recipe;
+    else if (item.name === name && item.type === "ingredient") return item as ingredient;
+  }
+  return null
+}
+const addIngredientsToMap = (item:cookbookEntry, map:Map<string, number>, amount:number):number => {
+  if (item.type === "ingredient") {
+    let ingr = item as ingredient;
+    if (map.has(item.name)) {
+      map.set(item.name, map.get(item.name) + amount)
+    }
+    else {
+      map.set(item.name, amount);
+    }
+    return ingr.cookTime * amount;
+  }
+  else {
+    let total = 0;
+    let recipe:recipe = item as recipe;
+    for (let ingr of recipe.requiredItems) {
+      let entry:cookbookEntry = getEntry(ingr.name)
+      total += addIngredientsToMap(entry, map, ingr.quantity * amount)
+    }
+    return total
+  }
+}
+app.get("/summary", (req:Request, res:Request) => {
+  const headers = req.query;
+  if(!hasKey(headers, "name")){
+    res.status(400).send("incorrect name field")
+    return;
+  }
+  const name = headers.name;
+  if (!checkContains(name)) {
+    res.status(400).send("does not contain an entry with this name")
+    return;
+  }
+  const entry:cookbookEntry = getEntry(name)
+  if (entry.type !== "recipe") {
+    res.status(400).send("entry is not a recipe")
+    return;
+  }
+  const recipe:recipe = entry as recipe;
+  interface expectedFormat {
+    name: string,
+    cookTime: number,
+    ingredients: requiredItem[]
+  };
+  let result:expectedFormat = {
+    name: "hey",
+    cookTime: 0,
+    ingredients: []
+  }
+  // let map = new Map()
+  // let cookTime = addIngredientsToMap(recipe, map, 1)
+  // result.cookTime = cookTime;
+  // map.forEach((value, key) => {
+  //   let obj = {
+  //     name:value,
+  //     quantity: key
+  //   }
+  //   result.ingredients.push(obj as requiredItem)
+  // })
+  res.status(200).send(JSON.stringify(result))
 });
 
 // =============================================================================
