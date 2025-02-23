@@ -47,15 +47,16 @@ app.post("/parse", (req:Request, res:Response) => {
 // Takes in a recipeName and returns it in a form that
 const parse_handwriting = (recipeName: string): string | null => {
   // TODO: implement me
-  recipeName.replace(/[-_]/, " ")
-  recipeName.replace(/ +/, " ")
-  recipeName.replace(/^ /, "")
-  recipeName.replace(/ $/, "")
+  recipeName =recipeName.replace(/[-_]/g, " ")
+  recipeName = recipeName.replace(/ +/g, " ")
+  recipeName =recipeName.replace(/^ /, "")
+  recipeName =recipeName.replace(/ $/, "")
+  recipeName = recipeName.replace(/[^a-zA-Z ]/g, "");
   let words = recipeName.split(" ")
-  for (let ind in words) {
-    words[ind] = words[ind].charAt(0).toUpperCase();
-  }
-  recipeName = words.join(" ")
+  let capatilised = words.map((word:string) => {
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  })
+  recipeName = capatilised.join(" ")
   if (recipeName.length == 0) return null
   return recipeName
 }
@@ -86,34 +87,38 @@ const writeCookbook = (obj:cookbookEntry) => {
   }
 }
 
+const checkUnique = (obj:any) => {
+  let seen = new Set(obj.name)
+  let cookbook = readCookbook()
+  for (let item of cookbook) {
+    if (seen.has(item.name)) return false;
+    seen.add(item.name);
+  }
+  return true;
+}
+
 const hasKey = (obj:any, str:string) => {
   return str in obj;
-}
-const readJson = async (req:Request):Promise<any> => {
-  return await req.json()
 }
 const checkValidRecipe = (obj:any): boolean =>{
   if(!hasKey(obj, "requiredItems")) return false;
   if (!Array.isArray(obj.requiredItems)) return false;
   let initialSize = obj.requiredItems.length;
   obj.requiredItems.filter((item:any) => {
-    return hasKey(item, "quantity") && hasKey(item, "name") && (item.keys().length == 2)
+    return hasKey(item, "quantity") && hasKey(item, "name") && (Object.keys(item).length == 2)
   })
   if (initialSize !== obj.requiredItems.length) return false;
-  let seen = new Set(obj.name)
-  for (let item of obj.requiredItems) {
-    if (seen.has(item.name)) return false;
-    seen.add(item.name);
-  }
+  if (!checkUnique(obj)) return false
   return true;
 }
 const checkValidIngredient = (obj:any):boolean => {
   if(!hasKey(obj, "cookTime")) return false;
   if (parseInt(obj.cookTime) < 0) return false;
+  if (!checkUnique(obj)) return false;
   return true;
 }
 
-const convertFromObj = (obj:any, ): ingredient | recipe | null => {
+const convertFromObj = (obj:any): ingredient | recipe | null => {
   if (!hasKey(obj, "name")) return null;
   if (!hasKey(obj, "type")) return null;
   if (obj.type === "recipe") {
@@ -126,22 +131,19 @@ const convertFromObj = (obj:any, ): ingredient | recipe | null => {
     let castObj:ingredient = obj as ingredient;
     return castObj;
   }
-  return null
+  else return null;
 }
 
 app.post("/entry", (req:Request, res:Response) => {
-  let dataProm = readJson(req)
-  dataProm
-  .then((cookbook:any) => {
-    let cookObj = convertFromObj(cookbook);
-    if (cookObj == null) {
-      res.status(400).send("invalid")
-    }
-    else {
-      writeCookbook(cookObj)
-      res.status(200).send("valid")
-    }
-  })
+  const cookbook = req.body
+  let cookObj = convertFromObj(cookbook);
+  if (cookObj == null) {
+    res.status(400).send("invalid")
+  }
+  else {
+    // writeCookbook(cookObj)
+    res.status(200).send("valid")
+  }
 });
 // [TASK 3] ====================================================================
 // Endpoint that returns a summary of a recipe that corresponds to a query name

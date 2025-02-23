@@ -22,6 +22,16 @@ describe("Task 1", () => {
       const response = await getTask1("");
       expect(response.status).toBe(400);
     });
+
+    it("error case 2", async () => {
+      const response = await getTask1("__-----   ");
+      expect(response.status).toBe(400);
+    });
+
+    it("more complex scenario", async () => {
+      const response = await getTask1(" - -__ -_  alp009911}{-  -___-- hA-alF_____RedEEo_  ___--");
+      expect(response.body).toStrictEqual({ msg: "Alp Ha Alf Redeeo" });
+    });
   });
 });
 

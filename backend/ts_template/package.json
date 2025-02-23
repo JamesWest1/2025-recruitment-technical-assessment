@@ -4,10 +4,12 @@
     "start": "ts-node devdonalds.ts"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "import-local": "^3.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",
+    "jest": "^29.7.0",
     "ts-node": "^10.9.2",
     "tslib": "^2.8.1",
     "typescript": "^5.7.3"
