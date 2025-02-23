@@ -158,6 +158,8 @@ const getEntry = (name:string): cookbookEntry | null => {
   }
   return null
 }
+// returns -1 if it can't find one  of the items, otherwise it returns the cookTime
+// map will contain a count of the quantity of each ingredient
 const addIngredientsToMap = (item:cookbookEntry, map:Map<string, number>, amount:number):number => {
   if (item.type === "ingredient") {
     let ingr = item as ingredient;
@@ -173,8 +175,11 @@ const addIngredientsToMap = (item:cookbookEntry, map:Map<string, number>, amount
     let total = 0;
     let recipe:recipe = item as recipe;
     for (let ingr of recipe.requiredItems) {
+      if (!checkContains(ingr.name)) return -1;
       let entry:cookbookEntry = getEntry(ingr.name)
-      total += addIngredientsToMap(entry, map, ingr.quantity * amount)
+      let increment = addIngredientsToMap(entry, map, ingr.quantity * amount)
+      if (increment === -1) return -1;
+      total += increment
     }
     return total
   }
@@ -202,21 +207,25 @@ app.get("/summary", (req:Request, res:Request) => {
     ingredients: requiredItem[]
   };
   let result:expectedFormat = {
-    name: "hey",
+    name: recipe.name,
     cookTime: 0,
     ingredients: []
   }
-  // let map = new Map()
-  // let cookTime = addIngredientsToMap(recipe, map, 1)
-  // result.cookTime = cookTime;
-  // map.forEach((value, key) => {
-  //   let obj = {
-  //     name:value,
-  //     quantity: key
-  //   }
-  //   result.ingredients.push(obj as requiredItem)
-  // })
-  res.status(200).send(JSON.stringify(result))
+  let map = new Map()
+  let cookTime = addIngredientsToMap(recipe, map, 1)
+  if (cookTime === -1) {
+    res.status(400).send("required item not found in the cookbook")
+    return;
+  }
+  result.cookTime = cookTime;
+  map.forEach((value, key) => {
+    let obj = {
+      name:key,
+      quantity: value
+    }
+    result.ingredients.push(obj as requiredItem)
+  })
+  res.status(200).send(result)
 });
 
 // =============================================================================

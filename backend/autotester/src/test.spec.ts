@@ -114,6 +114,29 @@ describe("Task 2", () => {
       });
       expect(resp3.status).toBe(400);
     });
+
+    it("Unique names 2", async () => {
+      const resp = await putTask2({
+        type: "ingredient",
+        name: "Beef",
+        cookTime: 10,
+      });
+      expect(resp.status).toBe(200);
+
+      const resp2 = await putTask2({
+        type: "ingredient",
+        name: "Apple",
+        cookTime: 0,
+      });
+      expect(resp2.status).toBe(200);
+
+      const resp3 = await putTask2({
+        type: "recipe",
+        name: "Beef",
+        cookTime: 8,
+      });
+      expect(resp3.status).toBe(400);
+    });
   });
 });
 
@@ -177,6 +200,13 @@ describe("Task 3", () => {
 
       const resp3 = await getTask3("Skibidi");
       expect(resp3.status).toBe(200);
+      expect(resp3.body).toEqual({
+        name: "Skibidi",
+        cookTime: 2,
+        ingredients: [
+          {name: "Bruh", quantity: 1}
+        ]
+      })
     });
   });
 });
