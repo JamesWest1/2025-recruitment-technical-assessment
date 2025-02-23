@@ -1,4 +1,15 @@
+const fs = require("fs");
+const path = require("path")
 const request = require("supertest");
+
+const clearCookbook = () => {
+  const filePath = path.join(__dirname, "../../ts_template/cookbook.json")
+  fs.writeFileSync(filePath, JSON.stringify([]));
+}
+
+afterEach(() => {
+  clearCookbook()
+})
 
 describe("Task 1", () => {
   describe("POST /parse", () => {

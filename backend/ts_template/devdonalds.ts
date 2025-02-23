@@ -141,7 +141,7 @@ app.post("/entry", (req:Request, res:Response) => {
     res.status(400).send("invalid")
   }
   else {
-    // writeCookbook(cookObj)
+    writeCookbook(cookObj)
     res.status(200).send("valid")
   }
 });
