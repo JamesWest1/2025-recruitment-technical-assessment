@@ -21,6 +21,8 @@ interface ingredient extends cookbookEntry {
   cookTime: number;
 }
 
+const cookbookArray: cookbookEntry[] = []
+
 // =============================================================================
 // ==== HTTP Endpoint Stubs ====================================================
 // =============================================================================
@@ -57,43 +59,20 @@ const parse_handwriting = (recipeName: string): string | null => {
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
   })
   recipeName = capatilised.join(" ")
-  if (recipeName.length == 0) return null
+  if (recipeName.length === 0) return null
   return recipeName
 }
 
 // [TASK 2] ====================================================================
 // Endpoint that adds a CookbookEntry to your magical cookbook
 
-const readCookbook = ():any => {
-  try {
-    const data = fs.readFileSync("cookbook.json", "utf8");
-    return JSON.parse(data);
-  }
-  catch (err) {
-    console.log(err)
-    return [];
-  }
-}
-
 const writeCookbook = (obj:cookbookEntry) => {
-  let data = readCookbook()
   obj.name = parse_handwriting(obj.name)
-  data.push(obj)
-  const toJsonData = JSON.stringify(data)
-  try {
-    fs.writeFileSync("cookbook.json", toJsonData)
-  }
-  catch (err) {
-    console.log(err)
-  }
+  cookbookArray.push(obj)
 }
 
-const checkContains = (name:string) => {
-  let cookbook = readCookbook()
-  const dishNameSearch = cookbook.filter((dish:any) => {
-    return name === dish.name;
-  })
-  return (dishNameSearch.length !== 0)
+const checkContains = (name:string):boolean => {
+  return (cookbookArray.filter((obj:cookbookEntry) => obj.name === name).length !== 0)
 }
 
 const hasKey = (obj:any, str:string) => {
@@ -104,7 +83,7 @@ const checkValidRecipe = (obj:any): boolean =>{
   if (!Array.isArray(obj.requiredItems)) return false;
   let initialSize = obj.requiredItems.length;
   obj.requiredItems.filter((item:any) => {
-    return hasKey(item, "quantity") && hasKey(item, "name") && (Object.keys(item).length == 2)
+    return hasKey(item, "quantity") && hasKey(item, "name") && (Object.keys(item).length === 2)
   })
   if (initialSize !== obj.requiredItems.length) return false;
   return true;
@@ -141,19 +120,18 @@ app.post("/entry", (req:Request, res:Response) => {
     res.status(400).send("already in the cookbook")
   }
   else if (cookObj == null) {
-    res.status(400).send("invalid")
+    res.status(400).send("could not convert to recipe or ingredient")
   }
   else {
     writeCookbook(cookbook)
-    res.status(200).send("valid")
+    res.status(200).send("entry has been logged")
   }
 });
 // [TASK 3] ====================================================================
 // Endpoint that returns a summary of a recipe that corresponds to a query name
 
 const getEntry = (name:string): cookbookEntry | null => {
-  let cookbook = readCookbook()
-  for (let item of cookbook) {
+  for (let item of cookbookArray) {
     if (item.name === name && item.type === "recipe") return item as recipe;
     else if (item.name === name && item.type === "ingredient") return item as ingredient;
   }
