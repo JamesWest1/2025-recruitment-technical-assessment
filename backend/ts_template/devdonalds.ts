@@ -19,8 +19,6 @@ interface ingredient extends cookbookEntry {
   cookTime: number;
 }
 
-const cookbookArray: cookbookEntry[] = []
-
 // =============================================================================
 // ==== HTTP Endpoint Stubs ====================================================
 // =============================================================================
@@ -28,7 +26,7 @@ const app = express();
 app.use(express.json());
 
 // Store your recipes here!
-const cookbook: any = null;
+const cookbook: cookbookEntry[] = [];
 
 // Task 1 helper (don't touch)
 app.post("/parse", (req:Request, res:Response) => {
@@ -46,7 +44,6 @@ app.post("/parse", (req:Request, res:Response) => {
 // [TASK 1] ====================================================================
 // Takes in a recipeName and returns it in a form that
 const parse_handwriting = (recipeName: string): string | null => {
-  // TODO: implement me
   recipeName =recipeName.replace(/[-_]/g, " ")
   recipeName = recipeName.replace(/ +/g, " ")
   recipeName =recipeName.replace(/^ /, "")
@@ -66,11 +63,11 @@ const parse_handwriting = (recipeName: string): string | null => {
 
 const writeCookbook = (obj:cookbookEntry) => {
   obj.name = parse_handwriting(obj.name)
-  cookbookArray.push(obj)
+  cookbook.push(obj)
 }
 
 const checkContains = (name:string):boolean => {
-  return (cookbookArray.filter((obj:cookbookEntry) => obj.name === name).length !== 0)
+  return (cookbook.filter((obj:cookbookEntry) => obj.name === name).length !== 0)
 }
 
 const hasKey = (obj:any, str:string) => {
@@ -112,16 +109,16 @@ const convertToEntry = (obj:any): recipe | ingredient | null => {
 }
 
 app.post("/entry", (req:Request, res:Response) => {
-  const cookbook = req.body
-  let cookObj = convertToEntry(cookbook);
-  if (checkContains(cookbook.name)) {
+  const body = req.body
+  let cookObj = convertToEntry(body);
+  if (checkContains(body.name)) {
     res.status(400).send("already in the cookbook")
   }
   else if (cookObj === null) {
     res.status(400).send("could not convert to recipe or ingredient")
   }
   else {
-    writeCookbook(cookbook)
+    writeCookbook(cookObj)
     res.status(200).send("entry has been logged")
   }
 });
@@ -129,7 +126,7 @@ app.post("/entry", (req:Request, res:Response) => {
 // Endpoint that returns a summary of a recipe that corresponds to a query name
 
 const getEntry = (name:string): cookbookEntry | null => {
-  for (let item of cookbookArray) {
+  for (let item of cookbook) {
     if (item.name === name && item.type === "recipe") return item as recipe;
     else if (item.name === name && item.type === "ingredient") return item as ingredient;
   }
