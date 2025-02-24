@@ -32,6 +32,10 @@ describe("Task 1", () => {
       const response = await getTask1(" - -__ -_  alp009911}{-  -___-- hA-alF_____RedEEo_  ___--");
       expect(response.body).toStrictEqual({ msg: "Alp Ha Alf Redeeo" });
     });
+    it("single word", async () => {
+      const response = await getTask1(" beef ");
+      expect(response.body).toStrictEqual({ msg: "Beef" });
+    });
   });
 });
 
@@ -154,7 +158,7 @@ describe("Task 3", () => {
       });
       expect(resp.status).toBe(200);
 
-      const resp2 = await getTask3("Beef");
+      const resp2 = await getTask3("beef");
       expect(resp2.status).toBe(400);
     });
 

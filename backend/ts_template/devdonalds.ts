@@ -19,6 +19,13 @@ interface ingredient extends cookbookEntry {
   cookTime: number;
 }
 
+
+interface summaryFormat {
+  name: string,
+  cookTime: number,
+  ingredients: requiredItem[]
+};
+
 // =============================================================================
 // ==== HTTP Endpoint Stubs ====================================================
 // =============================================================================
@@ -61,51 +68,67 @@ const parse_handwriting = (recipeName: string): string | null => {
 // [TASK 2] ====================================================================
 // Endpoint that adds a CookbookEntry to your magical cookbook
 
-const writeCookbook = (obj:cookbookEntry) => {
-  obj.name = parse_handwriting(obj.name)
+const writeCookbook = (obj:recipe | ingredient) => {
   cookbook.push(obj)
 }
 
+// check if the cookbook contains an entry with a certain name
 const checkContains = (name:string):boolean => {
   return (cookbook.filter((obj:cookbookEntry) => obj.name === name).length !== 0)
 }
 
+// check if an object contains a specific key
 const hasKey = (obj:any, str:string) => {
   return str in obj;
 }
+// return true if obj:any is a valid recipe, false otherwise
 const checkValidRecipe = (obj:any): boolean =>{
+  if (!isCookbookEntry(obj)) return false
+  if (!(obj.type === "recipe")) return false
   if(!hasKey(obj, "requiredItems")) return false;
   if (!Array.isArray(obj.requiredItems)) return false;
   let initialSize = obj.requiredItems.length;
   obj.requiredItems.filter((item:any) => {
-    return hasKey(item, "quantity") && hasKey(item, "name") && (Object.keys(item).length === 2)
+    return hasKey(item, "quantity") && hasKey(item, "name") && (Object.keys(item).length === 2) && (item.quantity > 0)
   })
   if (initialSize !== obj.requiredItems.length) return false;
   return true;
 }
+// return true if obj:any is a valid ingredient, false otherwise
 const checkValidIngredient = (obj:any):boolean => {
+  if (!isCookbookEntry(obj)) return false
+  if (!(obj.type === "ingredient")) return false
   if(!hasKey(obj, "cookTime")) return false;
   if (parseInt(obj.cookTime) < 0) return false;
   return true;
 }
 
-const validItem = (obj:any): boolean => {
+const isCookbookEntry = (obj:any) => {
   if (!hasKey(obj, "name")) return false;
   if (!hasKey(obj, "type")) return false;
-  if (obj.type === "recipe") {
-    return checkValidRecipe(obj);
-  }
-  else if (obj.type === "ingredient") {
-    return checkValidIngredient(obj);
-  }
-  else return false;
+  return true;
+}
+const validItem = (obj:any): boolean => {
+  return (checkValidIngredient(obj) || checkValidRecipe(obj))
 }
 
 const convertToEntry = (obj:any): recipe | ingredient | null => {
   if (!validItem(obj)) return null;
-  else if (obj.type === "recipe") return obj as recipe;
-  else if (obj.type === "ingredient") return obj as ingredient;
-  else return null
+  if (obj.type === "recipe") return obj as recipe
+  else return obj as ingredient
+  // obj.name = parse_handwriting(obj.name) // parse the handwriting of the name of the entry
+  // if (obj.type === 'recipe') {
+  //   let recipe = obj as recipe;
+  //   recipe.requiredItems.map((item:requiredItem) => { // make sure the handwriting is in the correct form
+  //     item.name = parse_handwriting(item.name)
+  //     return item
+  //   })
+  //   return recipe;
+  // }
+  // else {
+  //   return obj as ingredient;
+  // }
+  
 }
 
 app.post("/entry", (req:Request, res:Response) => {
@@ -175,12 +198,7 @@ app.get("/summary", (req:Request, res:Request) => {
     return;
   }
   const recipe:recipe = entry as recipe;
-  interface expectedFormat {
-    name: string,
-    cookTime: number,
-    ingredients: requiredItem[]
-  };
-  let result:expectedFormat = {
+  let result:summaryFormat = {
     name: recipe.name,
     cookTime: 0,
     ingredients: []
@@ -192,7 +210,7 @@ app.get("/summary", (req:Request, res:Request) => {
     return;
   }
   result.cookTime = cookTime;
-  map.forEach((value, key) => {
+  map.forEach((value, key) => { // add each of the values in the map to the ingredients array within the result object
     let obj = {
       name:key,
       quantity: value

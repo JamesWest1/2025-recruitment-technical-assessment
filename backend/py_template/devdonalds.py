@@ -57,12 +57,15 @@ def parse_handwriting(recipeName: str) -> Union[str | None]:
 			recipeName += word[0].upper() + word[1:] + ' '
 		else:
 			recipeName += word[0].upper()
-	recipeName = re.sub(r' $', '', recipeName)
+	recipeName = re.sub(r' $', '', recipeName) # remove trailing white space
 	return recipeName
 
 
 # [TASK 2] ====================================================================
 # Endpoint that adds a CookbookEntry to your magical cookbook
+
+
+# return true if the object data is a recipe object
 def parseRecipe(data):
 	if data['type'] != "recipe":
 		return False
@@ -79,6 +82,7 @@ def parseRecipe(data):
 			return False
 	return True
 
+# return true if the object data is an ingredient object
 def parseIngredient(data):
 	if data['type'] != "ingredient":
 		return False
@@ -88,37 +92,99 @@ def parseIngredient(data):
 		return False
 	return True
 
+# return true if name is in the cookbook
 def cookbookContains(name):
 	for entry in cookbook:
 		if entry['name'] == name:
 			return True
+	return False
 
+# insert the object data into the cookbook, assumes that data is valid
+def insertIntoCookbook(data):
+	data['name'] = parse_handwriting(data['name'])
+	cookbook.append(data)
+	# if data['type'] == 'ingredient':
+	# 	cookbook.append(data)
+	# 	return
+	# newRequiredItems = []
+	# for ind in range(len(data['requiredItems'])):
+	# 	item = data['requiredItems'][ind]
+	# 	item['name'] = parse_handwriting(item['name'])
+	# 	newRequiredItems.append(item)
+	# data['requiredItems'] = newRequiredItems
+	# cookbook.append(data)
 
 @app.route('/entry', methods=['POST'])
 def create_entry():
 	data = request.get_json()
 	if 'name' not in data:
 		return 'key name not found', 400
-	data['name'] = parse_handwriting(str(data['name']))
 	if 'type' not in data:
 		return 'key type not found', 400
 	if cookbookContains(data['name']):
 		return 'entry already in cookbook', 400
+	data['name'] = parse_handwriting(data['name'])
 	if parseRecipe(data):
-		cookbook.append(data)
+		insertIntoCookbook(data)
 		return 'recipe logged', 200
 	elif parseIngredient(data):
-		cookbook.append(data)
+		insertIntoCookbook(data)
 		return 'ingredient logged', 200
 	return 'invalid entry', 400
 
 
 # [TASK 3] ====================================================================
 # Endpoint that returns a summary of a recipe that corresponds to a query name
+
+def getEntry(name):
+	for entry in cookbook:
+		if entry['name'] == name:
+			return entry
+	return None
+
+
+# returns the cooking time for entry 'name'
+# updates mp (ingredientName -> quantity) with the quantity of each ingredient
+# if an entry with name 'name' isn't in the cookbook return -1. if name is a recipe and one of the required items is
+# invalid return -1
+def getIngredients(name, mp, amount):
+	entry = getEntry(name)
+	if entry == None:
+		return -1
+	if entry['type'] == 'ingredient':
+		if entry['name'] in mp:
+			mp[entry['name']] += amount
+		else:
+			mp[entry['name']] = amount
+		return amount * entry['cookTime']
+	else:
+		total = 0
+		for item in entry['requiredItems']:
+			entry = getEntry(item['name'])
+			if entry == None:
+				return -1
+			cookTime = getIngredients(entry['name'], mp, amount * item['quantity'])
+			if cookTime < 0:
+				return -1
+			total += cookTime
+		return total
+
 @app.route('/summary', methods=['GET'])
 def summary():
-	# TODO: implement me
-	return 'not implemented', 500
+	name = request.args.get('name')
+	if not cookbookContains(name):
+		return 'entry not found', 400
+	entry = getEntry(name)
+	if entry['type'] != 'recipe':
+		return 'entry is not a recipe', 400
+	mp = {}
+	cookTime = getIngredients(entry['name'], mp, 1) # this loades the base ingredients into mp in the form (ingredientName -> quantity)
+	if cookTime < 0:
+		return 'invalid ingridient in recipe', 400
+	ingredients = []
+	for key in mp:
+		ingredients.append({'name': key, 'quantity': mp[key]})
+	return {'name': entry['name'], 'cookTime': cookTime, 'ingredients': ingredients}, 200
 
 
 # =============================================================================
