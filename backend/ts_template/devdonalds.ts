@@ -1,6 +1,4 @@
 import express, { Request, Response } from "express";
-import { json } from "stream/consumers";
-import * as fs from "fs";
 
 // ==== Type Definitions, feel free to add or modify ==========================
 interface cookbookEntry {
@@ -119,7 +117,7 @@ app.post("/entry", (req:Request, res:Response) => {
   if (checkContains(cookbook.name)) {
     res.status(400).send("already in the cookbook")
   }
-  else if (cookObj == null) {
+  else if (cookObj === null) {
     res.status(400).send("could not convert to recipe or ingredient")
   }
   else {
