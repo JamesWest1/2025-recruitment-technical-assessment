@@ -101,18 +101,7 @@ def cookbookContains(name):
 
 # insert the object data into the cookbook, assumes that data is valid
 def insertIntoCookbook(data):
-	data['name'] = parse_handwriting(data['name'])
 	cookbook.append(data)
-	# if data['type'] == 'ingredient':
-	# 	cookbook.append(data)
-	# 	return
-	# newRequiredItems = []
-	# for ind in range(len(data['requiredItems'])):
-	# 	item = data['requiredItems'][ind]
-	# 	item['name'] = parse_handwriting(item['name'])
-	# 	newRequiredItems.append(item)
-	# data['requiredItems'] = newRequiredItems
-	# cookbook.append(data)
 
 @app.route('/entry', methods=['POST'])
 def create_entry():
@@ -123,7 +112,6 @@ def create_entry():
 		return 'key type not found', 400
 	if cookbookContains(data['name']):
 		return 'entry already in cookbook', 400
-	data['name'] = parse_handwriting(data['name'])
 	if parseRecipe(data):
 		insertIntoCookbook(data)
 		return 'recipe logged', 200
@@ -180,7 +168,7 @@ def summary():
 	mp = {}
 	cookTime = getIngredients(entry['name'], mp, 1) # this loades the base ingredients into mp in the form (ingredientName -> quantity)
 	if cookTime < 0:
-		return 'invalid ingridient in recipe', 400
+		return 'required item not found in the cookbook', 400
 	ingredients = []
 	for key in mp:
 		ingredients.append({'name': key, 'quantity': mp[key]})

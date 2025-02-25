@@ -116,19 +116,6 @@ const convertToEntry = (obj:any): recipe | ingredient | null => {
   if (!validItem(obj)) return null;
   if (obj.type === "recipe") return obj as recipe
   else return obj as ingredient
-  // obj.name = parse_handwriting(obj.name) // parse the handwriting of the name of the entry
-  // if (obj.type === 'recipe') {
-  //   let recipe = obj as recipe;
-  //   recipe.requiredItems.map((item:requiredItem) => { // make sure the handwriting is in the correct form
-  //     item.name = parse_handwriting(item.name)
-  //     return item
-  //   })
-  //   return recipe;
-  // }
-  // else {
-  //   return obj as ingredient;
-  // }
-  
 }
 
 app.post("/entry", (req:Request, res:Response) => {

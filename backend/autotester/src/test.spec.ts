@@ -258,5 +258,25 @@ describe("Task 3", () => {
         ]
       })
     });
+    it("Error test", async () => {
+      const meatball = {
+        type: "recipe",
+        name: "Bleh",
+        requiredItems: [{ name: "Boo", quantity: 1 }],
+      };
+      const resp1 = await postEntry(meatball);
+      expect(resp1.status).toBe(200);
+
+      const resp2 = await postEntry({
+        type: "recipe",
+        name: "Boo",
+        requiredItems: [{name: "Bonk", quantity: 10}]
+      });
+      expect(resp2.status).toBe(200);
+
+      const resp3 = await getTask3("Bleh");
+      expect(resp3.status).toBe(400);
+      expect(resp3.text).toEqual("required item not found in the cookbook")
+    });
   });
 });
